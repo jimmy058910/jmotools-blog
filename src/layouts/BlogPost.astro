@@ -1,0 +1,230 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'blog'>;
+}
+
+const { post } = Astro.props;
+const { title, description, pubDate, updatedDate, author, tags, canonicalUrl } = post.data;
+
+const formattedDate = pubDate.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const formattedUpdatedDate = updatedDate?.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonicalUrl={canonicalUrl}
+  ogType="article"
+  pubDate={pubDate}
+  author={author}
+>
+  <article class="post-container">
+    <div class="container">
+      <header class="post-header">
+        <div class="post-meta-top">
+          <time datetime={pubDate.toISOString()} class="post-date">{formattedDate}</time>
+          {updatedDate && (
+            <span class="post-updated">
+              · Updated <time datetime={updatedDate.toISOString()}>{formattedUpdatedDate}</time>
+            </span>
+          )}
+          <span class="post-author">· by {author}</span>
+        </div>
+        <h1 class="post-title">{title}</h1>
+        <p class="post-description">{description}</p>
+        {tags.length > 0 && (
+          <div class="post-tags">
+            {tags.map((tag) => (
+              <a href={`/tags/${tag}`} class="tag">#{tag}</a>
+            ))}
+          </div>
+        )}
+      </header>
+
+      <div class="post-body">
+        <slot />
+      </div>
+
+      <footer class="post-footer">
+        <div class="post-footer-inner">
+          <a href="/" class="back-link">← All posts</a>
+          <a
+            href={`https://github.com/jimmy058910/jmotools-blog/issues/new?title=Feedback: ${encodeURIComponent(title)}`}
+            target="_blank"
+            rel="noopener"
+            class="feedback-link"
+          >
+            Feedback / corrections
+          </a>
+        </div>
+      </footer>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .post-container {
+    padding: 3rem 0 2rem;
+  }
+
+  .post-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .post-meta-top {
+    font-size: 0.82rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+  }
+
+  .post-date {
+    color: var(--primary-color);
+  }
+
+  .post-title {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+  }
+
+  .post-description {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+    line-height: 1.6;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  /* Post body prose styles */
+  .post-body :global(h2) {
+    font-size: 1.5rem;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .post-body :global(h3) {
+    font-size: 1.2rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+  }
+
+  .post-body :global(h4) {
+    font-size: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.4rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+  }
+
+  .post-body :global(p) {
+    color: var(--text-secondary);
+    margin-bottom: 1.25rem;
+    line-height: 1.75;
+  }
+
+  .post-body :global(ul),
+  .post-body :global(ol) {
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+  }
+
+  .post-body :global(li) {
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+    line-height: 1.6;
+  }
+
+  .post-body :global(strong) {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .post-body :global(em) {
+    color: var(--text-muted);
+  }
+
+  .post-body :global(a) {
+    color: var(--primary-color);
+    text-decoration: underline;
+    text-decoration-color: rgba(0, 217, 255, 0.3);
+    text-underline-offset: 2px;
+    transition: all var(--transition-fast);
+  }
+
+  .post-body :global(a:hover) {
+    color: var(--accent-cyan);
+    text-decoration-color: var(--accent-cyan);
+  }
+
+  .post-footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .post-footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .back-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  .back-link:hover {
+    color: var(--primary-color);
+    text-decoration: none;
+  }
+
+  .feedback-link {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: color var(--transition-fast);
+  }
+
+  .feedback-link:hover {
+    color: var(--text-secondary);
+    text-decoration: none;
+  }
+</style>
