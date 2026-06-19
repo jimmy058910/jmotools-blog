@@ -18,6 +18,8 @@
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
     "astro": "^6.4.7",
+    "mdast-util-to-string": "^4.0.0",
+    "reading-time": "^1.5.0",
     "sharp": "^0.34.3"
   },
   "devDependencies": {
