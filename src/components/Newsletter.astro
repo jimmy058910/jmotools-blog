@@ -1,0 +1,38 @@
+---
+// Newsletter subscription form — logic lives in the client script below
+---
+<form id="nl-form" class="newsletter">
+  <label for="nl-email" class="sr-only">Email</label>
+  <input id="nl-email" name="email" type="email" placeholder="your@email.com" required />
+  <input type="text" name="website" id="nl-hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px" />
+  <button type="submit" id="nl-btn">Subscribe</button>
+  <p id="nl-ok" hidden>Subscribed — check your inbox.</p>
+</form>
+<style>
+  .newsletter { display: flex; gap: .5rem; flex-wrap: wrap; border: 1px solid var(--border-color); background: var(--bg-card); border-radius: 12px; padding: 1.5rem; margin: 2rem auto; max-width: 760px; }
+  .newsletter input[type="email"] { flex: 1 1 240px; padding: .75rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); }
+  .newsletter button { padding: .75rem 1.5rem; background: var(--primary-color); color: var(--bg-primary); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; }
+</style>
+<script>
+  import { validateEmail, isHoneypotTripped, buildPayload, SUBSCRIBE_ENDPOINT } from '../lib/subscribe';
+  const form = document.getElementById('nl-form');
+  const ok = document.getElementById('nl-ok');
+  const btn = document.getElementById('nl-btn');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = (document.getElementById('nl-email') as HTMLInputElement).value;
+    const hp = (document.getElementById('nl-hp') as HTMLInputElement).value;
+    if (isHoneypotTripped(hp)) return;
+    if (!validateEmail(email)) return;
+    btn?.setAttribute('disabled', 'true');
+    try {
+      await fetch(SUBSCRIBE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildPayload(email)),
+      });
+    } catch { /* graceful: show success regardless, matching apex behavior */ }
+    form?.setAttribute('hidden', 'true');
+    ok?.removeAttribute('hidden');
+  });
+</script>
