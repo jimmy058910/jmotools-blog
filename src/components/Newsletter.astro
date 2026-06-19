@@ -32,6 +32,9 @@
         body: JSON.stringify(buildPayload(email)),
       });
     } catch { /* graceful: show success regardless, matching apex behavior */ }
+    finally {
+      btn?.removeAttribute('disabled');
+    }
     form?.setAttribute('hidden', 'true');
     ok?.removeAttribute('hidden');
   });
