@@ -1,0 +1,114 @@
+---
+title: 'Cross-Tool Deduplication: How JMo Security Cuts Scanner Noise 30-40%'
+description: "The algorithm behind JMo Security's cross-tool finding deduplication — multi-dimensional similarity scoring, rule equivalence tables, and why the 30–40% noise reduction number is real."
+pubDate: 2026-06-18
+tags: ['deduplication', 'methodology', 'devsecops']
+---
+
+*By Jimmy — CompTIA-certified SOC Engineer at BAE Networks. Building JMo Security in the open.*
+
+---
+
+If you run multiple security scanners against the same codebase, you already know the problem: Trivy flags a `:latest` base image tag. Hadolint flags the same `:latest` tag as `DL3006`. Checkov logs `CKV_DOCKER_1`. Your dashboard now shows three findings for one line in one Dockerfile, and you spend the next fifteen minutes figuring out they're all the same thing.
+
+JMo Security reduces that noise by 30–40% on a typical codebase. This post explains exactly how — no marketing arithmetic, just the algorithm.
+
+## Two phases, two problems
+
+Cross-tool deduplication is actually two distinct problems:
+
+**Phase 1 — Same tool, same fingerprint.** If a scanner reports the same finding twice (re-running a scan, incremental scans), we catch that with a deterministic SHA256 fingerprint over `(tool, file_path, line, rule_id, severity)`. It runs first, it's O(n), and it handles noise from your own scanner's repeated runs.
+
+**Phase 2 — Different tools, same real issue.** This is the hard one. Trivy and Hadolint both flag line 3 of your Dockerfile. Their messages are completely different. Their rule IDs use incompatible namespaces. Their raw output schemas look nothing alike. A simple fingerprint won't catch it.
+
+Phase 2 is where the 30–40% reduction comes from.
+
+## Multi-dimensional similarity scoring
+
+Each pair of findings from Phase 2 gets a composite similarity score across three weighted dimensions:
+
+| Dimension | Weight | What it measures |
+|-----------|--------|-----------------|
+| Location  | **50%** | Same file path + overlapping line range (Jaccard index) |
+| Message   | **25%** | Normalized fuzzy match + security keyword token overlap |
+| Metadata  | **25%** | CWE/CVE ID matching + rule equivalence lookup |
+
+The default clustering threshold is **0.65** — two findings need a composite score of at least 0.65 to be grouped as duplicates. You can tune this in `jmo.yml`:
+
+```yaml
+deduplication:
+  similarity_threshold: 0.65  # range: 0.5–1.0
+```
+
+Or per-scan via `JMO_DEDUP_THRESHOLD` env var.
+
+### Why location gets 50%
+
+The same file at the same line is the strongest signal that two tools saw the same issue. Different tools describe the same vulnerability in wildly different language — you can't rely on message similarity alone. Location similarity uses a Jaccard index over line ranges, so a finding at lines 3–5 and one at lines 4–6 still score well together. The score drops linearly with the gap between ranges, hitting zero at 10 lines of separation.
+
+### Why the threshold is 0.65, not higher
+
+Originally 0.75. We lowered it because cross-tool findings covering the same issue reliably share location (giving a 0.50 head start) plus at least one metadata signal (CWE or rule equivalence), putting them consistently around 0.70–0.80. A 0.75 threshold was clipping real duplicates on findings where message text diverged significantly. The rule equivalence table (below) is what prevents false positives at 0.65.
+
+### The incompatible-type guard
+
+Before clustering, we apply a conflict check: if two findings both carry CWE tags but those CWE IDs don't match, the composite score is halved. This prevents a SQL injection finding (CWE-89) from being clustered with an XSS finding (CWE-79) that happen to share a nearby location.
+
+## Rule equivalence: the false-positive guard
+
+The metadata dimension scores 1.0 when a cross-tool rule equivalence mapping matches. We maintain a curated table of known-equivalent rules. A few examples:
+
+**Dockerfile `:latest` tag:**
+- Trivy: `DS001` / `:latest tag used`
+- Hadolint: `DL3006`, `DL3007`
+- Checkov: `CKV_DOCKER_1`, `CKV_DOCKER_7`
+
+**Kubernetes privileged container:**
+- Trivy: `KSV001`
+- Checkov: `CKV_K8S_1`
+- Kubescape: `C-0057`
+
+**AWS credential in source code:**
+- TruffleHog: `aws-access-token`
+- Gitleaks: `aws-access-token`, `aws-secret-access-key`
+- Semgrep: `generic.secrets.security.detected-aws-account-id`
+- NoseyParker: `AWS Access Key ID`
+
+When two rules map to the same canonical ID, the metadata dimension scores 1.0 regardless of how different the tool-specific rule IDs look. For two findings on the same file and line (location score 1.0), that's a composite of 0.75 before the message component contributes — enough to clear the 0.65 threshold on its own.
+
+## Algorithm selection: greedy vs. LSH
+
+Comparing every pair of findings is O(n²). For typical codebases (&lt;500 findings after Phase 1), a greedy O(n×k) algorithm is used: iterate each finding, score it against existing cluster representatives, assign it to the best match above threshold or open a new cluster. Fast enough. Zero overhead.
+
+For large codebases (≥500 findings), we switch to Locality-Sensitive Hashing. LSH generates hash signatures from key features — file path, line bucket, CWE/CVE IDs, security keyword tokens — and builds buckets of candidate pairs. Only candidates sharing a bucket get the full similarity calculation. Buckets over 100 items are skipped (prevents O(n²) worst case on weak signatures like shared CWE IDs). Average case: O(n log n).
+
+## What you get out
+
+When multiple findings cluster together, JMo emits a **consensus finding** with:
+
+- `detected_by`: every tool that flagged this issue
+- `severity`: elevated to the highest severity across the cluster
+- `confidence.level`: `HIGH` (4+ tools), `MEDIUM` (2–3 tools), or `LOW` (1 tool)
+- `context.duplicates`: the original findings, with their individual similarity scores
+
+Nothing is discarded. The originals live in `context.duplicates` so you can audit every grouping decision.
+
+## The 30–40% figure
+
+This range reflects real-world results on codebases with overlapping scanner coverage — specifically the `balanced` and `deep` scan profiles, where multiple tools cover the same layers: container, IaC, secrets, SAST. Projects running only one or two non-overlapping tools will see lower reduction, which is expected.
+
+Your scan output logs the exact number:
+
+```
+Cross-tool clustering complete: 142 → 89 findings (53 duplicates removed, 37.3% reduction)
+```
+
+Deterministic for the same inputs and the same threshold.
+
+## Compare this to "98.8% noise reduction"
+
+Some tools publish noise-reduction figures without defining what counts as noise, what the baseline is, or how the number was produced. We're not interested in that game.
+
+JMo's 30–40% is conservative, reproducible, and auditable: trace every cluster to its source findings, read the similarity scores, and adjust the threshold yourself if you disagree with a grouping. The algorithm is in `scripts/core/dedup_enhanced.py` and `scripts/core/rule_equivalence.py`. Open source, MIT licensed.
+
+If your reduction number looks different from this range, that's expected — it depends on how much scanner overlap your profile introduces. The right number is your number, not ours.
