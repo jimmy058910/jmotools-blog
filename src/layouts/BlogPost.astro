@@ -27,14 +27,14 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 				display: block;
 				margin: 0 auto;
 				border-radius: 12px;
-				box-shadow: var(--box-shadow);
+				box-shadow: var(--shadow-md);
 			}
 			.prose {
 				width: 720px;
 				max-width: calc(100% - 2em);
 				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
+				padding: 2rem 1em;
+				color: var(--text-secondary);
 			}
 			.title {
 				margin-bottom: 1em;
@@ -44,13 +44,33 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 			}
 			.title h1 {
 				margin: 0 0 0.5em 0;
+				color: var(--text-primary);
 			}
 			.date {
 				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
+				color: var(--text-muted);
 			}
 			.last-updated-on {
 				font-style: italic;
+			}
+			/* Prose content styling */
+			.prose :global(h2),
+			.prose :global(h3),
+			.prose :global(h4) {
+				color: var(--text-primary);
+			}
+			.prose :global(a) {
+				color: var(--primary-color);
+			}
+			.prose :global(pre) {
+				background: var(--bg-secondary);
+				border: 1px solid var(--border-color);
+				border-radius: 8px;
+				padding: 1rem;
+				overflow-x: auto;
+			}
+			.prose :global(code) {
+				font-family: var(--font-mono);
 			}
 		</style>
 	</head>
