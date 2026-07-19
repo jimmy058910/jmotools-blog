@@ -2,6 +2,7 @@
 title: "JMo Security v1.0.0: One Command to Run 28 Security Scanners"
 description: "Introducing JMo Security — a terminal-first, open-source toolkit that orchestrates 28 scanners, normalizes output, deduplicates findings, and maps to 6 compliance frameworks in one command."
 pubDate: 2026-04-15
+updatedDate: 2026-07-18
 tags: ["devsecops", "security", "open-source", "python", "devtools"]
 draft: false
 ---
@@ -24,7 +25,7 @@ One command. Every category. Normalized output.
 jmo scan --profile balanced
 ```
 
-That's it. JMo invokes up to 18 tools in parallel — secrets detection, SAST, SCA, SBOM generation, IaC scanning, container analysis, DAST, shell linting, malware scanning — normalizes every finding to a common schema, deduplicates across tools (cutting noise by 30–40%), maps to 6 compliance frameworks, and outputs results in JSON, SARIF, Markdown, CSV, or an interactive HTML dashboard.
+That's it. JMo invokes up to 17 tools in parallel — secrets detection, SAST, SCA, SBOM generation, IaC scanning, container analysis, DAST, shell linting, malware scanning — normalizes every finding to a common schema, deduplicates across tools (cutting noise by 30–40%), maps to 6 compliance frameworks, and outputs results in JSON, SARIF, Markdown, CSV, or an interactive HTML dashboard.
 
 ---
 
@@ -95,8 +96,8 @@ Not every tool runs every time. JMo's **scan profiles** let you choose depth vs.
 | Profile | Tools | Time |
 |---------|-------|------|
 | `fast` | 9 tools | 5–10 min |
-| `slim` | 14 tools | 12–18 min |
-| `balanced` | 18 tools | 18–25 min |
+| `slim` | 13 tools | 12–18 min |
+| `balanced` | 17 tools | 18–25 min |
 | `deep` | 28 tools | 40–70 min |
 
 ---
