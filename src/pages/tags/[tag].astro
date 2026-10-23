@@ -22,7 +22,7 @@ const { posts } = Astro.props;
 	<head><BaseHead title={`#${tag}`} description={`Posts tagged ${tag}`} /></head>
 	<body>
 		<Header />
-		<main class="container">
+		<main>
 			<h1>Posts tagged <span style="color: var(--accent-purple)">#{tag}</span></h1>
 			{posts.map((post) => <PostCard post={post} />)}
 		</main>
