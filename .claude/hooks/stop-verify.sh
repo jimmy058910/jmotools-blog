@@ -39,6 +39,18 @@ changed=$(
 )
 printf '%s\n' "$changed" | grep -Eq '^(src/|public/|[^/]+\.(mjs|cjs|js|ts|json)$)' || exit 0
 
+# Run on the Node in .nvmrc, the version Cloudflare's build and CI use. Astro 7 refuses to start
+# below 22.23.4, and the hook otherwise inherits nvm's default, which can be older (22.23.3 on
+# .199 on 2026-11-27). nvm.sh is not written for `set -u`, hence the toggle.
+nvm_sh="${NVM_DIR:-$HOME/.nvm}/nvm.sh"
+if [ -f .nvmrc ] && [ -s "$nvm_sh" ]; then
+  set +u
+  # shellcheck disable=SC1090
+  . "$nvm_sh" --no-use >/dev/null 2>&1
+  nvm use --silent >/dev/null 2>&1 || note "nvm has no Node $(cat .nvmrc) (run: nvm install); using $(node -v 2>/dev/null)."
+  set -u
+fi
+
 if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
   note "site files changed but node or npm was not found; tests, astro check and build skipped."
   exit 0
