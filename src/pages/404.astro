@@ -1,0 +1,32 @@
+---
+// Cloudflare Pages serves a top-level 404.html with status 404 for any path that matches no
+// file. Without one it falls back to the home page with status 200, so a mistyped or retired
+// URL looked like a real page to visitors and search engines (found 2026-11-27).
+import { getCollection } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import PostCard from '../components/PostCard.astro';
+
+const latest = (await getCollection('blog'))
+	.filter((p) => !p.data.draft)
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 3);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title="Page not found" description="This page does not exist on the JMo Security Blog." />
+		<meta name="robots" content="noindex" />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>Page <span style="color: var(--accent-purple)">not found</span></h1>
+			<p>There is no page at this address. It may have moved, or the link may be mistyped. <a href="/">See all posts</a>, or start with one of the latest:</p>
+			{latest.map((post) => <PostCard post={post} />)}
+		</main>
+		<Footer />
+	</body>
+</html>
