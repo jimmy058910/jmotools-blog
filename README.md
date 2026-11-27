@@ -54,6 +54,10 @@ All commands are run from the root of the project, from a terminal:
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
 
+## Deployment
+
+Cloudflare Pages builds and publishes the site. The `jmotools-blog` Pages project, in the Cloudflare account that holds the jmotools.com zone, is connected to this repository: every push to `main` runs `npm run build` there and serves `dist/` at blog.jmotools.com. Its Node version comes from `.nvmrc`. The GitHub Actions workflow (`ci.yml`) only runs the tests, `astro check` and the build; it deploys nothing.
+
 ## 👀 Want to learn more?
 
 Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
