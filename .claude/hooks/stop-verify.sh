@@ -2,10 +2,10 @@
 # Stop hook: before Claude ends a turn, run the unit tests, `astro check` and the build when
 # site files have changed, and send Claude back once (exit 2) with the errors if any fails.
 #
-# Why here: nothing local checks this repo. There are no git hooks, and the only CI is the
-# deploy workflow, which builds on a push to main. A post whose frontmatter breaks the
-# content schema, a type error in a component, or a broken subscribe helper is otherwise
-# found by a failed deploy.
+# Why here: nothing local checks this repo. There are no git hooks, and CI (ci.yml) and the
+# Cloudflare Pages build run only after a push. A post whose frontmatter breaks the content
+# schema, a type error in a component, or a broken subscribe helper is otherwise found by a
+# red CI run or a failed deploy.
 #
 # "Changed" means the working tree (git status, untracked files included) OR commits on this
 # branch since it left origin/main, limited to src/, public/ and the root config files. That
